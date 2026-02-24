@@ -1,0 +1,32 @@
+name: Sync Repository from Upstream
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Run every hour, 24/7
+  workflow_dispatch:       # Allow manual trigger
+    inputs:
+      source_branch:
+        description: 'Source branch to sync from'
+        required: false
+        default: 'main'
+      destination_branch:
+        description: 'Destination branch to sync into'
+        required: false
+        default: 'main'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Sync from upstream repository
+        uses: repo-sync/github-sync@v2
+        with:
+          # SOURCE_REPO secret must be set in repository Settings > Secrets.
+          # Expected format: 'owner/repository' (e.g., 'octocat/Hello-World')
+          # or a full HTTPS URL (e.g., 'https://github.com/octocat/Hello-World')
+          source_repo: ${{ secrets.SOURCE_REPO }}
+          source_branch: ${{ github.event.inputs.source_branch || 'main' }}
+          destination_branch: ${{ github.event.inputs.destination_branch || 'main' }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
