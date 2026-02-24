@@ -1,0 +1,42 @@
+name: Sync from upstream
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # runs 4 times per day (every 6 hours)
+  workflow_dispatch:          # allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync from upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/nareshkumarjayachandran/remix-of-remix-of-remix-of-nethajividhyalayam.git || true
+          git fetch upstream
+
+          # Determine which default branch the upstream uses
+          if git show-ref --quiet refs/remotes/upstream/main; then
+            UPSTREAM_BRANCH=main
+          elif git show-ref --quiet refs/remotes/upstream/master; then
+            UPSTREAM_BRANCH=master
+          else
+            echo "Could not find upstream main or master branch"
+            exit 1
+          fi
+
+          # Switch to the local default branch (or create it)
+          git checkout main || git checkout master || git checkout -b main
+
+          # Merge upstream changes; fail loudly on conflicts
+          git merge "upstream/$UPSTREAM_BRANCH" -m "chore: sync from upstream"
+          git push origin HEAD
